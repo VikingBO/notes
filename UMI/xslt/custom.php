@@ -60,4 +60,75 @@ class custom extends def_module {
         $monthArr['last'] = $last;
         return $this->parseTemplate('', $monthArr);
     }
+
+    // проверяем страницу на каноничность    
+    public function makeRelCanonical($page_id){
+			if(!$page_id) return;
+			$current_page_id = cmsController::getInstance()->getCurrentElementId();
+			$hierarchy_col = umiHierarchy::getInstance();
+			$domain_col = domainsCollection::getInstance();
+			$page = $hierarchy_col->getElement($page_id, true, true);
+
+			if(!$page) return;
+			
+			if($page_id == false){
+				if($current_page_id == false && defined('VIA_HTTP_SCHEME')){
+					throw new publicException('cant get current element via HTTP SCHEME MODE');
+				}
+				$page_id = $current_page_id;
+				
+				$object_id = $page->getObjectId();
+				$parents_ids = $hierarchy_col->getObjectInstances($object_id, true, true);
+				if(count($parents_ids) == 0 || count($parents_ids) == 1 || $parents_ids[0] == $page_id){
+					return '';
+				}
+				$first_parent_id = $parents_ids[0];
+				$path = $hierarchy_col->getPathById($first_parent_id);
+				$domain_id = $hierarchy_col->getElement($first_parent_id, true, true)->getDomainId();
+				$domain_name = $domain_col->getDomain($domain_id)->getHost();
+
+				return '<link rel="canonical" href="' . 'http://' . $domain_name . $path . '"/>';
+			}else{
+				$page_id = intval($page_id);
+				if($page_id == 0){
+					throw new publicException('wrong id given');
+				}
+				if($page == false){
+					throw new publicException('page with id = ' . $page_id . ' not found');
+				}
+				$object_id = $page->getObjectId();
+				$parents_ids = $hierarchy_col->getObjectInstances($object_id, true, true);
+				if(count($parents_ids) == 0 || count($parents_ids) == 1 || $parents_ids[0] == $page_id){
+					return '';
+				}
+				$first_parent_id = $parents_ids[0];
+				$path = $hierarchy_col->getPathById($first_parent_id);
+				$domain_id = $hierarchy_col->getElement($first_parent_id, true, true)->getDomainId();
+				$domain_name = $domain_col->getDomain($domain_id)->getHost();
+
+				return '<link rel="canonical" href="' . 'http://' . $domain_name . $path . '"/>';
+			}
+		}
+
+    // проверяем страницу на каноничность 
+	public function makeRelCanonicalId($page_id = false){
+		$hierarchy_col = umiHierarchy::getInstance();
+
+		if($page_id){
+			$page_id = intval($page_id);
+			if($page_id == 0){
+				throw new publicException('wrong id given');
+			}
+			$page = $hierarchy_col->getElement($page_id, true, true);
+			if($page == false){
+				throw new publicException('page with id = ' . $page_id . ' not found');
+			}
+			$object_id = $page->getObjectId();
+			$parents_ids = $hierarchy_col->getObjectInstances($object_id, true, true);
+			if(count($parents_ids) == 0 || count($parents_ids) == 1 || $parents_ids[0] == $page_id){
+				return '';
+			}
+			return $parents_ids[0];
+		}
+	}
 }
